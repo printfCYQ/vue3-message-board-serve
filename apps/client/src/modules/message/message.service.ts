@@ -2,11 +2,13 @@ import { Message } from '@libs/db/models/meaasge.model';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CommentService } from '../comment/comment.service';
 
 @Injectable()
 export class MessageService {
   constructor(
     @InjectRepository(Message) private messageRepository: Repository<Message>,
+    private commentService: CommentService,
   ) {}
   async addMessage(messageDto, id) {
     const newMessage = this.messageRepository.create({
@@ -43,12 +45,20 @@ export class MessageService {
         isDelete: false,
       },
     });
+    const list = [];
+    for (const item of res) {
+      const commentCount = await this.commentService.getAllComentById(item.id);
+      list.push({
+        ...item,
+        commentCount,
+      });
+    }
     if (res) {
       return {
         message: '查询成功',
         code: 200,
         data: {
-          list: res,
+          list,
         },
       };
     } else {

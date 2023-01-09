@@ -9,8 +9,11 @@ export class CommentService {
     @InjectRepository(Comment) private commentRepository: Repository<Comment>,
   ) {}
 
-  async addComment(commentDto) {
-    const newComment = this.commentRepository.create(commentDto);
+  async addComment(commentDto, id) {
+    const newComment = this.commentRepository.create({
+      ...commentDto,
+      user: id,
+    });
     const res = await this.commentRepository.save(newComment);
     if (res) {
       return {
@@ -25,10 +28,21 @@ export class CommentService {
     }
   }
 
-  async getComment(pageNum, pageSzie, messageId) {
+  async getAllComentById(messageId) {
+    const res = await this.commentRepository.find({
+      where: {
+        message: messageId,
+        isDelete: false,
+      },
+    });
+    return res.length;
+  }
+
+  async getComment(pageNum = 1, pageSzie = 10, messageId) {
+    console.log(messageId);
     const skip = (Number(pageNum) - 1) * Number(pageSzie);
     const take = Number(pageSzie);
-    return this.commentRepository.find({
+    const res = await this.commentRepository.find({
       order: {
         id: 'ASC',
       },
@@ -40,12 +54,20 @@ export class CommentService {
         message: messageId,
       },
     });
-
-    // const res = await this.commentRepository
-    //   .createQueryBuilder('comment')
-    //   .leftJoinAndSelect(User, 'user', 'user.id = comment.user')
-    //   .getRawMany();
-    // return res;
+    console.log(res);
+    if (res) {
+      const commentCount = await this.getAllComentById(messageId);
+      return {
+        message: '查询成功',
+        code: 200,
+        data: {
+          list: res,
+          commentCount,
+        },
+      };
+    } else {
+      return { message: '查询失败', code: 2000 };
+    }
   }
 
   async delComment(id) {
